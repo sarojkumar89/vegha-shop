@@ -37,7 +37,8 @@
         }
         return gk_fileData[filename] || "";
         }
-        </script><!DOCTYPE html>
+</script>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -184,6 +185,15 @@
             padding: 1rem;
             width: 100%;
         }
+        .social-media a {
+            color: #ed8936;
+            margin: 0 0.5rem;
+            text-decoration: none;
+            font-size: 1.2rem;
+        }
+        .social-media a:hover {
+            color: #dd6b20;
+        }
         section {
             scroll-margin-top: 80px;
         }
@@ -222,6 +232,14 @@
         }
         .login-modal.show, .confirm-modal-container.show {
             display: flex;
+        }
+        .offer-banner {
+            background: #ed8936;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 5px;
         }
     </style>
 </head>
@@ -267,6 +285,7 @@
         <div class="hero-content">
             <h1 class="text-5xl font-bold mb-4">Step Into Style</h1>
             <p class="text-xl mb-6">Discover premium sneakers with unmatched comfort and design.</p>
+            <div class="offer-banner">First Order: 10% Off! | Buy 2, Get 15% Off!</div>
             <a href="#products" class="btn">Shop Now</a>
         </div>
     </section>
@@ -302,6 +321,8 @@
         <div class="container mx-auto">
             <h2 class="text-3xl font-bold text-center mb-8">Your Cart</h2>
             <div id="cart-items" class="mb-8"></div>
+            <h3 class="text-xl font-bold">Subtotal: ₹<span id="cart-subtotal">0</span></h3>
+            <h3 class="text-xl font-bold">Discount: ₹<span id="cart-discount">0</span></h3>
             <h3 class="text-xl font-bold">Total: ₹<span id="cart-total">0</span></h3>
             <a href="#checkout" class="btn mt-4">Proceed to Checkout</a>
         </div>
@@ -311,6 +332,8 @@
         <div class="container mx-auto">
             <h2 class="text-3xl font-bold text-center mb-8">Checkout</h2>
             <div id="checkout-items" class="mb-8"></div>
+            <h3 class="text-xl font-bold">Subtotal: ₹<span id="checkout-subtotal">0</span></h3>
+            <h3 class="text-xl font-bold">Discount: ₹<span id="checkout-discount">0</span></h3>
             <h3 class="text-xl font-bold">Total: ₹<span id="checkout-total">0</span></h3>
             <div class="checkout-form">
                 <input type="text" id="checkout-name" placeholder="Full Name" class="w-full p-2 mb-4 border rounded">
@@ -354,6 +377,11 @@
 
     <footer class="footer">
         <p>Gautam Buddha Nagar, Uttar Pradesh, India</p>
+        <div class="social-media">
+            <a href="https://www.instagram.com/vegha-shop" target="_blank">Instagram: @vegha-shop</a>
+            <a href="https://www.facebook.com/vegha-shop" target="_blank">Facebook: @vegha-shop</a>
+            <a href="https://x.com/vegha-shop" target="_blank">X: @vegha-shop</a>
+        </div>
         <p>© 2025 Vegha. All rights reserved.</p>
     </footer>
 
@@ -378,6 +406,7 @@
         let orders = [];
         let currentUser = null;
         let cancelOrderIndex = null;
+        let isFirstOrder = true; // Track if user has placed any orders
 
         // Render products
         function renderProducts(filteredProducts) {
@@ -472,16 +501,32 @@
             gsap.to('#cart-count', { scale: 1.2, duration: 0.2, yoyo: true, repeat: 1 });
         }
 
+        // Calculate discounts
+        function calculateDiscount(subtotal) {
+            let discount = 0;
+            let discountReason = '';
+            if (isFirstOrder && orders.filter(order => order.user === currentUser).length === 0) {
+                discount = subtotal * 0.1; // 10% off for first order
+                discountReason = 'First Order: 10% Off';
+            } else if (cart.length >= 2) {
+                discount = subtotal * 0.15; // 15% off for 2 or more items
+                discountReason = 'Buy 2, Get 15% Off';
+            }
+            return { discount, discountReason };
+        }
+
         // Update cart
         function updateCart() {
             const cartItems = document.getElementById('cart-items');
+            const cartSubtotal = document.getElementById('cart-subtotal');
+            const cartDiscount = document.getElementById('cart-discount');
             const cartTotal = document.getElementById('cart-total');
             const cartCount = document.getElementById('cart-count');
             cartItems.innerHTML = '';
-            let total = 0;
+            let subtotal = 0;
 
             cart.forEach((item, index) => {
-                total += item.price;
+                subtotal += item.price;
                 const cartItem = document.createElement('div');
                 cartItem.className = 'cart-item';
                 cartItem.innerHTML = `
@@ -495,19 +540,24 @@
                 cartItems.appendChild(cartItem);
             });
 
-            cartTotal.textContent = total.toLocaleString('en-IN');
+            const { discount, discountReason } = calculateDiscount(subtotal);
+            cartSubtotal.textContent = subtotal.toLocaleString('en-IN');
+            cartDiscount.textContent = discount.toLocaleString('en-IN') + (discount > 0 ? ` (${discountReason})` : '');
+            cartTotal.textContent = (subtotal - discount).toLocaleString('en-IN');
             cartCount.textContent = cart.length;
         }
 
         // Update checkout
         function updateCheckout() {
             const checkoutItems = document.getElementById('checkout-items');
+            const checkoutSubtotal = document.getElementById('checkout-subtotal');
+            const checkoutDiscount = document.getElementById('checkout-discount');
             const checkoutTotal = document.getElementById('checkout-total');
             checkoutItems.innerHTML = '';
-            let total = 0;
+            let subtotal = 0;
 
             cart.forEach((item, index) => {
-                total += item.price;
+                subtotal += item.price;
                 const checkoutItem = document.createElement('div');
                 checkoutItem.className = 'checkout-item';
                 checkoutItem.innerHTML = `
@@ -520,7 +570,10 @@
                 checkoutItems.appendChild(checkoutItem);
             });
 
-            checkoutTotal.textContent = total.toLocaleString('en-IN');
+            const { discount, discountReason } = calculateDiscount(subtotal);
+            checkoutSubtotal.textContent = subtotal.toLocaleString('en-IN');
+            checkoutDiscount.textContent = discount.toLocaleString('en-IN') + (discount > 0 ? ` (${discountReason})` : '');
+            checkoutTotal.textContent = (subtotal - discount).toLocaleString('en-IN');
         }
 
         // Update orders
@@ -552,6 +605,8 @@
                     <div>
                         <h4 class="font-bold">Order #${index + 1} - ${order.status}</h4>
                         ${itemsHtml}
+                        <p>Subtotal: ₹${order.subtotal.toLocaleString('en-IN')}</p>
+                        <p>Discount: ₹${order.discount.toLocaleString('en-IN')} ${order.discount > 0 ? `(${order.discountReason})` : ''}</p>
                         <p>Total: ₹${order.total.toLocaleString('en-IN')}</p>
                         <p>Shipping: ${order.address}</p>
                         <p>Ordered on: ${order.date}</p>
@@ -681,10 +736,15 @@
             const address = document.getElementById('checkout-address').value;
             const phone = document.getElementById('checkout-phone').value;
             if (name && address && phone && cart.length > 0) {
-                const total = cart.reduce((sum, item) => sum + item.price, 0);
+                const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
+                const { discount, discountReason } = calculateDiscount(subtotal);
+                const total = subtotal - discount;
                 const order = {
                     user: currentUser,
                     items: [...cart],
+                    subtotal,
+                    discount,
+                    discountReason,
                     total,
                     address,
                     status: 'Processing',
@@ -694,6 +754,7 @@
                 generateInvoice(order, name, phone);
                 alert('Order confirmed! Invoice downloaded.');
                 cart = [];
+                isFirstOrder = false; // Mark first order as used
                 updateCart();
                 updateCheckout();
                 updateOrders();
@@ -738,9 +799,14 @@
 
             doc.line(20, y, 190, y);
             y += 5;
+            doc.text(`Subtotal: ₹${order.subtotal.toLocaleString('en-IN')}`, 150, y, { align: 'right' });
+            y += 5;
+            doc.text(`Discount: ₹${order.discount.toLocaleString('en-IN')} ${order.discount > 0 ? `(${order.discountReason})` : ''}`, 150, y, { align: 'right' });
+            y += 5;
             doc.text(`Total: ₹${order.total.toLocaleString('en-IN')}`, 150, y, { align: 'right' });
             y += 10;
             doc.text('Thank you for shopping with Vegha!', 20, y);
+            doc.text('Follow us: @vegha-shop on Instagram, Facebook, and X', 20, y + 10);
 
             doc.save(`invoice_${orders.length}.pdf`);
         }
